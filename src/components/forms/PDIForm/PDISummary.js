@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { View, ScrollView, Text } from "react-native";
 import { connect } from "react-redux";
 import { Actions } from "react-native-router-flux";
-import { formCreate, fieldUpdate } from "actions";
+import { formCreate, pdiFieldUpdate } from "actions";
 import { CardSection, Button } from "common";
 import { Timer } from "custom";
 import { HeaderStyle, SubHeaderStyle } from "styles";
@@ -177,4 +177,4 @@ const mapStateToProps = (state) => {
 	return { uid, sessionid, attendee, type, fields };
 };
 
-export default connect(mapStateToProps, { formCreate, fieldUpdate })(PDISummary);
+export default connect(mapStateToProps, { formCreate, pdiFieldUpdate })(PDISummary);

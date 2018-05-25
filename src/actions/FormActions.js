@@ -8,6 +8,9 @@ import {
 	FORM_FETCH_SUCCESS,
 	FIELD_INITIALIZE,
 	FIELD_UPDATE,
+	PDI_FIELD_INITIALIZE,
+	PDI_FIELD_UPDATE,
+	PDI_NEW_LOOP,
 	TIMER_START,
 	TIMER_TICK,
 	TIMER_STOP,
@@ -22,21 +25,25 @@ export const formUpdate = ({ prop, value }) => {
 	};
 };
 export const formCreate = ({ uid, sessionid, attendee, type, fields }) => {
-	fields = _.map(fields, (field, name) => {
-		return {
-			name,
-			value: String(field)
-		};
-	});
-	realm.write(() => {
-		let session = realm.objects("User")[0].clients[uid].sessions[sessionid];
-		session.forms.push({
-			type,
-			attendee: { name: attendee },
-			fields
+	if(type !== "PDI"){
+		fields = _.map(fields, (field, name) => {
+			return {
+				name,
+				value: String(field)
+			};
 		});
-	});
-	return { type: FORM_CREATE, payload: retrieveForms(uid, sessionid), uid, sessionid };
+		realm.write(() => {
+			let session = realm.objects("User")[0].clients[uid].sessions[sessionid];
+			session.forms.push({
+				type,
+				attendee: { name: attendee },
+				fields
+			});
+		});
+		return { type: FORM_CREATE, payload: retrieveForms(uid, sessionid), uid, sessionid };
+	}	else {
+		
+	}
 };
 export const formFetch = ({ uid }) => {
 	// const { currentUser } = firebase.auth();
@@ -121,9 +128,10 @@ export const fieldInitialize = ({ formType }) => {
 		case "CDI":
 			fields = CDI_FIELDS;
 			break;
-		case "PDI":
-			fields = PDI_FIELDS;
-			break;
+		// case "PDI":
+		// 	fields = PDI_BASE;
+		// 	fields.sequences[0] = PDI_FIELDS;
+		// 	break;
 	}
 	return { type: FIELD_INITIALIZE, payload: { fields } };
 };
@@ -133,6 +141,37 @@ export const fieldUpdate = ({ field, value }) => {
 		payload: { field, value }
 	};
 };
+
+// PDI Fields
+export const pdiFieldInitialize = () => {
+	let base = {...PDI_BASE};
+	return { type: PDI_FIELD_INITIALIZE, payload: { base } };
+};
+export const pdiFieldUpdate = ({ field, value, isTimeout=false }) => {
+	return {
+		type: PDI_FIELD_UPDATE,
+		payload: { field, value, isTimeout }
+	};
+};
+export const pdiNewLoop = ({ type }) => {
+	let fields;
+	switch (type){
+		case "sequence":
+			// timeOutLoops must be shadowed or else only the reference to PDI_FIELDS.timeOutLoops will be passed.
+			fields = {...PDI_FIELDS, timeOutLoops: [...PDI_FIELDS.timeOutLoops]};
+			break;
+		case "timeout":
+			fields = {...PDI_TIMEOUT_FIELDS};
+			break;
+		default:
+			fields = {};
+	}
+	return { 
+		type: PDI_NEW_LOOP,
+		payload: { type, fields }
+	};
+};
+
 
 const PREPOST_FIELDS = {
 	neutralTalk: 0,
@@ -167,6 +206,10 @@ const CDI_FIELDS = {
 	notes: ""
 };
 
+const PDI_BASE = {
+	sequences: []
+};
+
 const PDI_FIELDS = {
 	DcIc: "",
 	Effective: false,
@@ -176,7 +219,11 @@ const PDI_FIELDS = {
 	Obey3: "",
 	Praise: "",
 	ChairWarning: "",
-	TimeoutChair: "",
-	TimeoutRoom: "",
+	timeOutLoops: [],
 	ParentConfirm: false
-}; 
+};
+
+const PDI_TIMEOUT_FIELDS = {
+	TimeoutChair: "",
+	TimeoutRoom: ""			
+};
